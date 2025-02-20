@@ -1,6 +1,6 @@
 ---
 sidebar_label: "Honda"
-sidebar_position: 1
+sidebar_position: 2
 ---
 
 # Honda
@@ -12,9 +12,10 @@ The services available for the Honda account include:
 * Ask Dave
 
 ## Ask Dave
-The first step before using the Ask Dave automation is to ensure that your data files are compressed as a ZIP file following the following folder structure `data-folder/month/file.xlsx>`.
+The first step before using the Ask Dave automation is to ensure that your data files are in a compressed folder with files whose original folder structure is `data-folder/month/file.xlsx>`. After the folder is compressed, the folder structure should look something like `data-folder.zip/data-folder/month/file.xlsx`.
+Before compressing, ensure that all the necessary files are available and stored correctly for every month.
 The backend logic will handle the computation of the Ask Dave summary, allowing the user to see summary plots and download the summary file as an xlsx (excel) file.
-The logic of how the calculations are made can be explained by the pseudocode:
+The backend logic can be explained by the following pseudocode:
 
 ```python
 # Iterate over each month's file
@@ -57,25 +58,31 @@ On the generated plots, for each plot, there is an option to view the chart on f
 There is also an option to download each chart as shown below:
 ![download chart](./img/downloadChart.png)
 
-
 ## High Deliverability
-Similar to Ask Dave, ensure you have the data files zipped in the folder structure mentioned above.
-Ensure that the number of files and the months included in your zipped folder is correct as this will be displayed during the computation of High Deliverability thus allowing you to confirm the correctness of the input data.
+Similar to Ask Dave, ensure that your data files are in a compressed folder with files whose original folder structure is `data-folder/month/file.xlsx>`. After the folder is compressed, the folder structure should look something like `data-folder.zip/data-folder/month/file.xlsx`.
+Before compressing, ensure that all the necessary files are available and stored correctly for every month.
 The logic used for High Deliverability can be explained by the pseudocode:
 ```python
 for each month:
     # Get the files and store in a dictionary where the month
     # is the key and the dataframes (dfs) for that month are the values
     # This variable is called dataframes_dict
+    # i.e dataframes_dict = {"January 2024":df,
+    #                        "February 2024":df,
+    #                        "March 2024":df,
+    #                        "April 2024":df,
+    #                        "May 2024":df,
+    #                        ...}
     
-for each month, df in dataframes_dict.items(): # key - values
-    # clean the df
-    # Extract the month
-    # Append the cleaned DataFrame to the list for the month
+for each month, df in dataframes_dict.items(): # key:values
+    # clean the df using a predefined function
+    # Extract the month name
+    # Append the cleaned DataFrame month name to the list for the month
+    # e.g monthly_combined_dfs['May2024]=[df1_may_2024, df2_may_2024...dfn_may_2024]
     monthly_combined_dfs = {}
     for month, dfs in monthly_dataframes.items():
         
-        combined_df = pd.concat(dfs, ignore_index=True) # concatenate
+        combined_df = pd.concat(dfs, ignore_index=True) # concatenate the dfs for the month
         monthly_combined_dfs[month] = combined_df
     
 # The function to calculate the pct is applied to each row as follows
@@ -85,23 +92,31 @@ def calculate_percentage(row, total, delivered_total, unique_opens_total):
     """
     if row['ordered'] == 'Delivered': # if row value of the column 'ordered' is 'Delivered'
         return (row['num'] / total)*100 # pct
-    elif row['ordered'] == 'Unique Clicks To Opens':
+    elif row['ordered'] == 'Unique Clicks To Opens': # If instead the row value of the column 'ordered' is 'Unique Clicks To Opens'
         return (row['num'] / unique_opens_total)*100
-    elif row['ordered'] == 'total':
+    elif row['ordered'] == 'total': # If instead the row value of the column 'ordered' is 'total'
         return 100
-    else:
+    else: # Anything else
         return (row['num'] / delivered_total)*100
     
 # This is how the calculate_percentage method is used
-full_dfs = {}
-grouped_dfs = []
-raw_dfs = []
+full_dfs = {}  # e.g when populated looks something like {"January 2024": df,
+               #                                           "February 2024": df,
+               #                                           "March 2024": df,
+               #                                           "April 2024": df,
+               #                                           "May 2024": df,
+               #                                           ...}
+grouped_dfs = [] # when populated looks something like [df1, df2, df3, df4, df5, df6]
+raw_dfs = [] # when populated looks something like [df1, df2, df3, df4, df5, df6]
 
 for month, dfs in monthly_combined_dfs.items():
     total # get sum total of 'total'
-   
-    Filter out rows where the value of the column 'Ordered' is 'total'
-    # Filter to obtain monthly_df_grouped
+    
+    # Filter out rows where the value of the column 'Ordered' is not 'total'
+
+    # Group the df by the column 'ordered' to obtain monthly_df_grouped the df would now vary based on the values of the column
+    # 'ordered' such as delivered, gross clicks, gross opens, unique clicks, unique clicks to opens, unique opens and unsubs.
+    # It would also vary based on the campaign type and month-year.
     
     # Where the row value of the col 'ordered' is 'Delivered'
     Get delivered_total 
@@ -115,30 +130,23 @@ for month, dfs in monthly_combined_dfs.items():
                                                                 total=total,
                                                                 delivered_total=delivered_total, 
                                                                 unique_opens_total=unique_opens_total)
-    monthly_df_grouped['month'] = month
+    # Populate the key with the name of the month
+    monthly_df_grouped['month'] = month 
     monthly_combined_dfs[key]['month'] = month
     
     # Add to the list for concatenation
     grouped_dfs.append(monthly_df_grouped)
     raw_dfs.append(monthly_combined_dfs[month])
 
-# Concatenate all DataFrames
+# Concatenate all DataFrames - the variable full_dfs houses both the grouped and the raw for easy filtering
 full_dfs['grouped'] = pd.concat(grouped_dfs, ignore_index=True)
 full_dfs['raw'] = pd.concat(raw_dfs, ignore_index=True)
 
 # Print the keys of full_dfs
-print(full_dfs.keys())
+print(full_dfs.values())
 
 # The output would look something like:
-230128.0
-240725.0
-241752.0
-158338.0
-153040.0
-149391.0
-146643.0
-
-dict_keys(['grouped', 'raw']) # Raw dfs are ungrouped
+dict_keys(['grouped', 'raw']) # Raw dfs are the ungrouped ones
         
 # This is the logic used to filter the dfs
 # Dictionary to store DataFrames grouped by campaign type
@@ -164,7 +172,7 @@ for campaign_type in campaign_types:
  'Honda_Acura_Recall_February_24__Erdman',
  'Honda_Acura_Recall_February_24__PAB',
 ```
-The download logic is similar to that of Ask Dave.
+The download mechanism is similar to that of Ask Dave.
 
 ## Informed Delivery
 The file upload and chart download work the same as the services described earlier on in this documentation.

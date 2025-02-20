@@ -36,7 +36,7 @@ const config = {
       {
         docs: {
           sidebarPath: './sidebars.js', // Path to sidebar configuration
-          editUrl: 'https://github.com/Nzuri-Codebase/documentation-site', // GitHub repo for editing
+          editUrl: 'https://github.com/Nzuri-Codebase/docs-site', // GitHub repo for editing
         },
         blog: {
           showReadingTime: true,
@@ -44,7 +44,7 @@ const config = {
             type: ['rss', 'atom'],
             xslt: true,
           },
-          editUrl: 'https://github.com/Nzuri-Codebase/documentation-site', // GitHub repo for editing
+          editUrl: 'https://github.com/Nzuri-Codebase/docs-site', // GitHub repo for editing
         },
         theme: {
           customCss: './src/css/custom.css',
